@@ -4,17 +4,19 @@ require(tidyr)
 require(stringr)
 require(readr)
 
-data_file = "baseline"  ###### reset this to either baseline, staff, IC, etc depending on which sensitivity analysis this is so that plot names update
+data_file = "Inf"  ###### reset this to either baseline, staff, IC, etc depending on which sensitivity analysis this is so that plot names update
 
-res_master <- read.csv(paste0("2020-09-28res_master_",data_file,".csv")) 
+res_master <- read.csv(paste0("2020-10-02res_master_",data_file,".csv")) 
 nrow(res_master)
 
-####### infection plots -----
-#plot summary values (mean) across simulations
+
+# summary values (mean) across simulations
 
 res_master %>%
-  mutate(Intervention = case_when(Intervention == "C) HCW intervention" ~ "C) Staff intervention", 
+  mutate(Intervention = case_when(Intervention == "C) HCW intervention" ~ "C) Immunity-based staffing", 
+                                  Intervention == "B) Resident intervention" ~ "B) Resident cohorting",
                                   Intervention == "A) No intervention" ~ "A) None",
+                                  Intervention == "D) Both interventions" ~ "D) Both",
                                   TRUE ~ as.character(Intervention))) %>%
   group_by(Sim, Intervention, Testing) %>%
   mutate(cumulative_mortality = cumsum(mortality), 
@@ -66,23 +68,23 @@ test_names_labeller = c("none"="None", "weekly_antigen"="Weekly Antigen", "daily
                         "weekly_PCR"="Weekly PCR", "fast_PCR"="Weekly PCR, 1 day", "weekly_PCR_slow"="Weekly PCR, 7 day")
 
 
-# ## stacked bars
-# summary %>%
-#   filter(time==181) %>%
-#   rename(Resident=med.proportion.r, Staff = med.proportion.hcw, Community = med.proportion.allstaff) %>%
-#   dplyr::select(Intervention, Testing,Staff, Resident, Community, lower_R, upper_R, lower_hcw, upper_hcw) %>%
-#   gather(Population, Final_size, Staff:Community) %>%
-#   mutate(Pop_cat = case_when(Population=="Resident" ~ "Resident",
-#                              Population=="Staff" ~ "Staff",
-#                              Population=="Community" ~ "Staff"),
-#          Pop_alpha = case_when(Population=="Resident" ~ "Nursing home",
-#                                Population=="Staff" ~ "Nursing home",
-#                                Population=="Community" ~ "Community"),
-#          Upper_quartile = case_when(Population=="Staff" ~ upper_hcw, 
-#                                     Population=="Resident" ~upper_R),
-#          Lower_quartile = case_when(Population=="Staff" ~ lower_hcw, 
-#                                     Population=="Resident" ~lower_R)) %>%
-#   dplyr::select(-c(lower_R, upper_R, lower_hcw, upper_hcw)) -> summary_plots
+## stacked bar plots
+summary %>%
+  filter(time==181) %>%
+  rename(Resident=med.proportion.r, Staff = med.proportion.hcw, Community = med.proportion.allstaff) %>%
+  dplyr::select(Intervention, Testing,Staff, Resident, Community, lower_R, upper_R, lower_hcw, upper_hcw) %>%
+  gather(Population, Final_size, Staff:Community) %>%
+  mutate(Pop_cat = case_when(Population=="Resident" ~ "Resident",
+                             Population=="Staff" ~ "Staff",
+                             Population=="Community" ~ "Staff"),
+         Pop_alpha = case_when(Population=="Resident" ~ "Nursing home",
+                               Population=="Staff" ~ "Nursing home",
+                               Population=="Community" ~ "Community"),
+         Upper_quartile = case_when(Population=="Staff" ~ upper_hcw,
+                                    Population=="Resident" ~upper_R),
+         Lower_quartile = case_when(Population=="Staff" ~ lower_hcw,
+                                    Population=="Resident" ~lower_R)) %>%
+  dplyr::select(-c(lower_R, upper_R, lower_hcw, upper_hcw)) -> summary_plots
 # 
 # summary_plots %>%
 #   subset(Pop_alpha == "Nursing home") -> NH
@@ -91,29 +93,29 @@ test_names_labeller = c("none"="None", "weekly_antigen"="Weekly Antigen", "daily
 #   subset(Pop_alpha == "Community") -> Community
 # 
 # legend_plot <- ggplot()+
-#   geom_col(data = NH, aes(x=factor(Testing, levels = test_order), 
+#   geom_col(data = NH, aes(x=factor(Testing, levels = test_order),
 #                           y=Final_size,  fill=Intervention,alpha=factor(Pop_alpha)), position="dodge", color="grey")+
-#   geom_col(data=Community, aes(x=factor(Testing, levels = test_order), 
+#   geom_col(data=Community, aes(x=factor(Testing, levels = test_order),
 #                                y=Final_size,  fill=Intervention,alpha=factor(Pop_alpha)), position="dodge", color="grey")+
-#   geom_errorbar(data=NH,aes(x=factor(Testing, levels = test_order), ymin=Lower_quartile, ymax=Upper_quartile, fill=Intervention), 
+#   geom_errorbar(data=NH,aes(x=factor(Testing, levels = test_order), ymin=Lower_quartile, ymax=Upper_quartile, fill=Intervention),
 #                 width=.3, position=position_dodge(0.9)) +
 #   scale_alpha_discrete(range=c(1, 0.5), name="Population")+
 #   scale_x_discrete(labels=test_names, name="testing strategy")+
 #   scale_y_continuous(name = "Cumulative incidence (Proportion)", limits = c(0,1))+
 #   #ylab()+
 #   #xlab("testing strategy")+
-#   facet_wrap(vars(factor(Pop_cat)),nrow=2) + labs(alpha="Source of infection") + 
+#   facet_wrap(vars(factor(Pop_cat)),nrow=2) + labs(alpha="Source of infection") +
 #   theme_bw()
 # 
 # legend <- get_legend(legend_plot)
 # 
 # 
 # final_size_bar_stacked <- ggplot()+
-#   geom_col(data = NH, aes(x=factor(Testing, levels = test_order), 
+#   geom_col(data = NH, aes(x=factor(Testing, levels = test_order),
 #                           y=Final_size,  fill=Intervention), position="dodge", color="grey")+
-#   geom_col(data=Community, aes(x=factor(Testing, levels = test_order), 
+#   geom_col(data=Community, aes(x=factor(Testing, levels = test_order),
 #                                y=Final_size,  fill=Intervention), position="dodge", color="grey",alpha=0.4)+
-#   geom_errorbar(data=NH,aes(x=factor(Testing, levels = test_order), ymin=Lower_quartile, ymax=Upper_quartile, fill=Intervention), 
+#   geom_errorbar(data=NH,aes(x=factor(Testing, levels = test_order), ymin=Lower_quartile, ymax=Upper_quartile, fill=Intervention),
 #                 width=.3, position=position_dodge(0.9)) +
 #   scale_alpha_discrete(range=c(1, 0.5), name="Population")+
 #   scale_x_discrete(labels=test_names, name="testing strategy")+
@@ -127,6 +129,7 @@ test_names_labeller = c("none"="None", "weekly_antigen"="Weekly Antigen", "daily
 # final_size_bar_stacked_legend <- ggarrange(final_size_bar_stacked,legend,widths=c(5,1))
 # final_size_bar_stacked_legend
 # ggsave(paste0(Sys.Date(),"_finalsize_bar_stacked_",data_file,".pdf"), final_size_bar_stacked_legend)
+
 
 
 ## Violin plot
@@ -150,20 +153,20 @@ violin_plot <- ggplot() +
   facet_wrap(vars(factor(Population, levels = c("Resident", "Staff", "Community")),),nrow=3, 
              labeller = labeller(.cols=c("Resident" = "Resident cases", "Staff"= "Staff cases, nursing home origin", "Community" = "Staff cases, community origin"))) +
   theme_bw() + 
-  theme(panel.grid.major.x=element_blank(), legend.position = "bottom")+
+  theme(strip.background =element_rect(fill="white"), 
+        panel.grid.major.x=element_blank(), legend.position = "bottom")+
   geom_vline(xintercept=seq(1,length(test_order))+.5,color="lightgrey")+
   geom_vline(xintercept=c(1, 5)+.5,color="lightgrey", lwd=2) +
-  scale_x_discrete(labels = function(x) str_wrap(test_names, width = 12), name="testing strategy")+
+  scale_x_discrete(labels = function(x) str_wrap(test_names, width = 12), name="Testing strategy")+
   scale_y_continuous(name = "Cumulative incidence (Proportion)", limits = c(0,1)) + 
-  labs(fill="Cohorting Intervention")
+  labs(fill="Intervention")
 
 violin_plot
-ggsave(paste0(Sys.Date(),"_violin_",data_file,".pdf"), violin_plot, width = 9, height = 6)
+ggsave(paste0(Sys.Date(),"_violin_",data_file,".png"), violin_plot, width = 9, height = 6)
 
 
 
 # table of results
-
 summary_plots %>%
   ungroup() %>%
   mutate(`Test Strategy` = case_when(Testing=="none" ~ "1. None",
@@ -195,101 +198,78 @@ write.csv(Table3_res, file="Table3_residents.csv")
 write.csv(Table3_staff, file="Table3_staff.csv")
 
 
-## Plot infection dynamics for multiple testing scenarios
-# 
-# summary %>%
-#   filter(Testing =="none") %>%
-#   ggplot()+
-#   geom_line(aes(x=time, y=med.r.S),col="black",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.S),col="black",lty=4)+
-#   geom_line(aes(x=time, y=med.r.E),col="red",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.E),col="red",lty=4)+
-#   geom_line(aes(x=time, y=med.r.R),col="blue",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.R),col="blue",lty=4)+
-#   geom_line(aes(x=time, y=med.cum.inc.community),col="green",lty=4)+
-#   facet_wrap(vars(Intervention), nrow=2) +
-#   scale_y_continuous(name="people")+
-#   theme_bw() +
-#   labs(title = "No Testing") +
-#   theme(legend.position="none") -> plot_A
-# 
-# summary %>%
-#   filter(Testing =="daily_antigen") %>%
-#   ggplot()+
-#   geom_line(aes(x=time, y=med.r.S),col="black",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.S),col="black",lty=4)+
-#   geom_line(aes(x=time, y=med.r.E),col="red",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.E),col="red",lty=4)+
-#   geom_line(aes(x=time, y=med.r.R),col="blue",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.R),col="blue",lty=4)+
-#   geom_line(aes(x=time, y=med.cum.inc.community),col="green",lty=4)+
-#   facet_wrap(vars(Intervention),nrow = 2) +
-#   scale_y_continuous(name="people")+
-#   theme_bw() +
-#   labs(title = "Daily Rapid Antigen") +
-#   theme(legend.position="none")  -> plot_B
-# 
-# summary %>%
-#   filter(Testing =="weekly_PCR") %>%
-#   ggplot()+
-#   geom_line(aes(x=time, y=med.r.S),col="black",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.S),col="black",lty=4)+
-#   geom_line(aes(x=time, y=med.r.E),col="red",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.E),col="red",lty=4)+
-#   geom_line(aes(x=time, y=med.r.R),col="blue",lty=1)+
-#   geom_line(aes(x=time, y=med.hcw.R),col="blue",lty=4)+
-#   geom_line(aes(x=time, y=med.cum.inc.community),col="green",lty=4)+
-#   facet_wrap(vars(Intervention),nrow = 2) +
-#   scale_y_continuous(name="people")+
-#   theme_bw() +
-#   labs(title = "Weekly PCR",caption = "Solid: residents, Dashed: staff") +
-#   theme(legend.position="none")  -> plot_C
-# 
-# summary_plots<- ggarrange(plot_A, plot_B, plot_C, nrow=1, ncol=3)
-# summary_plots
-# 
-# ggsave(paste0(Sys.Date(),"_dynamics_",data_file,".pdf"),summary_plots, width=26, height=10, units="in")
-# 
 
-
-# Plot side-by-sides to look at no testing vs slow PCR 
+# Plot side-by-side dynamics to look at no testing vs slow PCR 
+colors <- c("Susceptible" = "darkgreen", "Recovered" = "blue", "Incidence" = "red")
+linetypes <- c("Resident" = "solid", "Staff" = "dotdash")
 
 summary %>%
   subset(Testing =="none" | Testing =="weekly_PCR_slow" | Testing == "daily_antigen") %>%
   subset(Intervention == "A) None") %>%
   ggplot()+
-  geom_line(aes(x=time, y=med.r.S),col="black",lty=1)+
-  geom_line(aes(x=time, y=med.hcw.S),col="black",lty=4)+
+  geom_line(aes(x=time, y=med.r.S,col="Susceptible",lty="Resident"))+
+  geom_line(aes(x=time, y=med.hcw.S, col="Susceptible",lty="Staff"))+
   # geom_line(aes(x=time, y=med.r.E),col="red",lty=1)+
   # geom_line(aes(x=time, y=med.hcw.E),col="red",lty=4)+
-  geom_line(aes(x=time, y=med.r.R),col="blue",lty=1)+
-  geom_line(aes(x=time, y=med.hcw.R),col="blue",lty=4)+
-  geom_col(aes(x=time, y=mean.inc.hcw*20+mean.inc.R*20),col=NA,alpha=0.25, fill = "red")+ # put on different scale
+  geom_line(aes(x=time, y=med.r.R,col="Recovered",lty="Resident"))+
+  geom_line(aes(x=time, y=med.hcw.R,col="Recovered",lty="Staff"))+
+  geom_col(aes(x=time, y=mean.inc.hcw*20+mean.inc.R*20, fill = "Incidence"),col=NA,alpha=0.25)+ # put on different scale
   #geom_line(aes(x=time, y=med.cum.inc.community),col="green",lty=4)+ # put on different scale
   scale_y_continuous(name="People", sec.axis = sec_axis(~ . / 20, name = "Cases per day")
                      )+
   scale_x_continuous(limits=c(1,181), breaks=c(0, 30, 60, 90, 120, 150, 180))+
   facet_wrap(vars(factor(Testing, levels = c("none", "weekly_PCR_slow", "daily_antigen"))), 
-            labeller = labeller(.cols=c("none" = "No Testing", "weekly_PCR_slow"= "Weekly PCR, delayed",  "daily_antigen"="Daily Rapid Antigen")))+
+            labeller = labeller(.cols=c("none" = "No Testing", "weekly_PCR_slow"= "Weekly PCR, 7 day",  "daily_antigen"="Daily Antigen")))+
   theme_bw() +
-  theme(legend.position="none", strip.background =element_rect(fill="white"),
-        panel.grid.major = element_blank(), panel.grid.minor=element_blank())  -> zoom_in_notesting
+  scale_color_manual(breaks=c("Susceptible", "Recovered"), values = c("Susceptible" = "darkgreen", "Recovered" = "blue"))+
+  scale_linetype_manual(values = linetypes) + 
+  labs(fill="", color="", linetype = "")+
+  theme(strip.background =element_rect(fill="white"),
+        panel.grid.major = element_blank(), panel.grid.minor=element_blank(),
+        legend.position = "bottom")  -> zoom_in_notesting
 
 zoom_in_notesting
 
-ggsave(paste0(Sys.Date(),"_notesting_dynamics_",data_file,".pdf"),zoom_in_notesting, width=10, height=4, units="in")
+#ggsave(paste0(Sys.Date(),"_notesting_dynamics_",data_file,".pdf"),zoom_in_notesting, width=10, height=4, units="in")
+
+
+
+## Final size curves
+final_size_plot <- res_master %>%
+  ggplot()+
+  #geom_line(aes(x=time, y=cum_inc_r, group=interaction(Sim, Intervention), color=Intervention), lty=1, lwd=0.2)+
+  #geom_line(aes(x=time, y=cum_inc_hcw, group=interaction(Sim, Intervention), color=Intervention), lty=4, lwd=0.2)+
+  geom_line(data=summary, aes(x=time, y=med.cum.inc.r, color=Intervention), lty=1, lwd=0.8)+
+  geom_line(data=summary, aes(x=time, y=med.cum.inc.hcw, color=Intervention), lty=4, lwd=0.8)+
+  geom_line(data=summary, aes(x=time, y=med.cum.inc.community, color=Intervention),lty=3, lwd=0.8)+
+  scale_y_continuous(name="People", limits=c(0,125))+
+  scale_x_continuous(limits=c(0,181), breaks=c(0, 60, 120, 180))+
+  facet_wrap(vars(factor(Testing, levels = test_order)), 
+             labeller = labeller(.cols=function(x) str_wrap(test_names_labeller, width = 13)), nrow = 2) +
+  theme_bw()+
+  theme(strip.background =element_rect(fill="white"), legend.position = "bottom")+
+  labs(color = "Interventions")
+
+final_size_plot
+#ggsave(paste0(Sys.Date(),"_finalsize_",data_file,".pdf"), final_size_plot, width=10, height=5, units="in")
+
+
+## plot together as figure 3
+Figure_3 <- ggarrange(zoom_in_notesting, final_size_plot, ncol=1, labels = c("A", "B"))
+ggsave(paste0(Sys.Date(),"_Figure_3.png"), Figure_3, width=10, height=9, units="in")
 
 
 
 
-#plot individual simulations to see spread
+
+#plot individual simulations to see spread (Figure S1)
 temp <- summary %>%
   subset(Testing =="daily_antigen" | Testing == "weekly_PCR" | Testing == "none") %>%
-  subset(Intervention == "A) None" | Intervention == "D) Both interventions")
+  subset(Intervention == "A) None" | Intervention == "D) Both")
 
 res_master %>%
   subset(Testing =="daily_antigen" | Testing == "weekly_PCR" | Testing == "none") %>%
-  subset(Intervention == "A) None" | Intervention == "D) Both interventions") %>%
+  subset(Intervention == "A) None" | Intervention == "D) Both") %>%
   group_by(Sim, Intervention, time) %>%
   ggplot()+
   geom_line(aes(x=time, y=S.rNC, group=Sim),col="darkgreen", lwd=0.1, alpha=0.4)+
@@ -314,32 +294,11 @@ res_master %>%
              switch = "y"
              )+
   theme_bw() +
-  theme(legend.position="none")  -> sim_plot
+  theme(legend.position="none", 
+        strip.background =element_rect(fill="white"))  -> sim_plot
 
 sim_plot
-ggsave(paste0(Sys.Date(),"_dailySimPlots_",data_file,".pdf"),sim_plot)
-
-
-
-## Final size curves
-
-final_size_plot <- res_master %>%
-  ggplot()+
-  #geom_line(aes(x=time, y=cum_inc_r, group=interaction(Sim, Intervention), color=Intervention), lty=1, lwd=0.2)+
-  #geom_line(aes(x=time, y=cum_inc_hcw, group=interaction(Sim, Intervention), color=Intervention), lty=4, lwd=0.2)+
-  geom_line(data=summary, aes(x=time, y=med.cum.inc.r, color=Intervention), lty=1, lwd=0.8)+
-  geom_line(data=summary, aes(x=time, y=med.cum.inc.hcw, color=Intervention), lty=4, lwd=0.8)+
-  geom_line(data=summary, aes(x=time, y=med.cum.inc.community, color=Intervention),lty=3, lwd=0.8)+
-  scale_y_continuous(name="People", limits=c(0,125))+
-  scale_x_continuous(limits=c(0,181), breaks=c(0, 60, 120, 180))+
-  facet_wrap(vars(factor(Testing, levels = test_order)), 
-                 labeller = labeller(.cols=function(x) str_wrap(test_names_labeller, width = 13)), nrow = 2) +
-  theme_bw()+
-  theme(legend.position = "bottom")+
-  labs(color = "Cohorting Interventions")
-
-final_size_plot
-ggsave(paste0(Sys.Date(),"_finalsize_",data_file,".pdf"), final_size_plot, width=10, height=5, units="in")
+ggsave(paste0(Sys.Date(),"_SimulationPlots_",data_file,".png"),sim_plot, width=9, height=9, units="in")
 
 
 
