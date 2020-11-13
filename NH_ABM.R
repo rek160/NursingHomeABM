@@ -603,12 +603,7 @@ for(s in seq_along(1:nrow(testing_scenarios))){
     Ns <- initialize(inits,parms)
     res <- as.data.frame(matrix(nrow=length(dt),ncol=length(Ns)))
     VLs <- NULL    
-    bug_staff <- NULL
-    bug_resident <- NULL
-    bug_r <-0
-    bug_s <- 0
     for(i in 1:length(dt)){
-      debug <- Ns
       final <- stochastic_NH(parms,Ns,t_step,(i-1)*t_step)
       Ns <- final
       res[i,] <- c(i, nrow(Ns[["S.rNC"]]), nrow(Ns[["E.rNC"]]), nrow(Ns[["A.rNC"]]), nrow(Ns[["I.rNC"]]), nrow(Ns[["R.rNC"]]), 
@@ -617,18 +612,6 @@ for(s in seq_along(1:nrow(testing_scenarios))){
                    nrow(Ns[["S.hcwC"]]), nrow(Ns[["E.hcwC"]]), nrow(Ns[["A.hcwC"]]), nrow(Ns[["I.hcwC"]]), nrow(Ns[["R.hcwC"]]), 
                    nrow(Ns[["I.hcwH"]]), Ns[["inc_r"]],  Ns[["inc_hcw"]], Ns[["cum_inc_r"]], Ns[["cum_inc_hcw"]], Ns[["cum_inc_community"]],
                    Ns[["mortality"]],Ns[["total"]])
-      staff <- sum(res[i,c(9:18)])
-      residents <- sum(res[i,2:8])
-      if (staff!=100 & bug_s==0){
-        bug_staff <- debug
-        cat("staff",i,staff,"\n")
-        bug_s <- 1
-      }
-      if (residents!=100 & bug_r==0){
-        bug_resident <- debug
-        cat("residents",i,residents,"\n")
-        bug_r <- 1
-      }
       VLs <- rbind(VLs, get_VL(final, i))
     }
     
