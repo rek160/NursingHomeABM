@@ -1,9 +1,13 @@
-recover_or_test_r <- function(df,parms, symptoms){
+recover_or_test_r <- function(df,parms,symptoms){
   
   df %>%
     subset(Inf.days==Inf.pd) %>%
     mutate(Rec.days = 0) %>%
     dplyr::select(ID,VL,VL_waning,Rec.days) -> recovered
+  
+  
+  df %>%
+    subset(!(ID %in% recovered$ID)) -> df
   
   df %>%
     subset(removal.pd == ID.days) -> tested1
@@ -63,7 +67,8 @@ recover_or_test_r <- function(df,parms, symptoms){
   
   df1 %>%
     subset(ID.days != removal.pd) %>%
-    mutate(ID.days = ID.days + 1) %>%
+    mutate(ID.days = ID.days + 1,
+           Inf.days = Inf.days + 1) %>%
     bind_rows(df2) %>%
     bind_rows(df3) -> df
   
@@ -73,6 +78,22 @@ recover_or_test_r <- function(df,parms, symptoms){
        "df"=df)
 }
 
+recover_I.rC <- function(df,parms){
+  
+  df %>%
+    subset(Inf.days==Inf.pd) %>%
+    mutate(Rec.days = 0) %>%
+    dplyr::select(ID,VL,VL_waning,Rec.days) -> recovered
+  
+  
+  df %>%
+    subset(!(ID %in% recovered$ID)) %>%
+    mutate(Inf.days = Inf.days + 1) -> df    
+  
+  list("recovered"=recovered,
+       "df"=df)
+}
+  
 
 recover_or_test_hcw <- function(df,parms, total, symptoms){
   
@@ -80,6 +101,9 @@ recover_or_test_hcw <- function(df,parms, total, symptoms){
     subset(Inf.days==Inf.pd) %>%
     mutate(Rec.days = 0) %>%
     dplyr::select(ID,VL,VL_waning,Rec.days) -> recovered
+  
+  df %>%
+    subset(!(ID %in% recovered$ID)) -> df
   
   df %>%
     subset(removal.pd == ID.days) -> tested1
@@ -144,7 +168,8 @@ recover_or_test_hcw <- function(df,parms, total, symptoms){
   
   df1 %>%
     subset(ID.days != removal.pd) %>%
-    mutate(ID.days = ID.days + 1) %>%
+    mutate(ID.days = ID.days + 1,
+           Inf.days = Inf.days + 1) %>% 
     bind_rows(df2) %>%
     bind_rows(df3) -> df
   
@@ -338,7 +363,7 @@ move_hcw <- function(S.hcwNC,
                      A.hcwC,
                      I.hcwC, 
                      R.hcwC,
-                     prop.rNC,prop.hcwNC){
+                     prop.rNC, prop.hcwNC){
   
   SEAI.hcwNC <- c(S.hcwNC$ID,E.hcwNC$ID,A.hcwNC$ID,I.hcwNC$ID)
   SEAI.hcwC <- c(S.hcwC$ID,E.hcwC$ID,A.hcwC$ID,I.hcwC$ID)
@@ -358,53 +383,53 @@ move_hcw <- function(S.hcwNC,
       R.move <- 0
       SEAI.move <- move
     }
-      
+    
     SEAI.hcwC %>%
-        as.data.frame() %>%
-        setNames("ID") %>%
-        sample_n(SEAI.move,replace=FALSE) -> ID_move
+      as.data.frame() %>%
+      setNames("ID") %>%
+      sample_n(SEAI.move,replace=FALSE) -> ID_move
     
     S.hcwC %>%
-      subset(ID %in% ID_move) %>%
+      subset(ID %in% ID_move$ID) %>%
       bind_rows(S.hcwNC) -> S.hcwNC
     
     S.hcwC %>%
-      subset(!(ID %in% ID_move)) -> S.hcwC
+      subset(!(ID %in% ID_move$ID)) -> S.hcwC
     
     E.hcwC %>%
-      subset(ID %in% ID_move) %>%
+      subset(ID %in% ID_move$ID) %>%
       bind_rows(E.hcwNC) -> E.hcwNC
     
     E.hcwC %>%
-      subset(!(ID %in% ID_move)) -> E.hcwC
+      subset(!(ID %in% ID_move$ID)) -> E.hcwC
     
     A.hcwC %>%
-      subset(ID %in% ID_move) %>%
+      subset(ID %in% ID_move$ID) %>%
       bind_rows(A.hcwNC) -> A.hcwNC
     
     A.hcwC %>%
-      subset(!(ID %in% ID_move)) -> A.hcwC
+      subset(!(ID %in% ID_move$ID)) -> A.hcwC
     
     I.hcwC %>%
-      subset(ID %in% ID_move) %>%
+      subset(ID %in% ID_move$ID) %>%
       bind_rows(I.hcwNC) -> I.hcwNC
     
     I.hcwC %>%
-      subset(!(ID %in% ID_move)) -> I.hcwC
+      subset(!(ID %in% ID_move$ID)) -> I.hcwC
     
     if (R.move > 0){
       R.hcwC %>%
         sample_n(R.move,replace=FALSE) -> ID_move.R
       
-        R.hcwC %>%
-          subset(ID %in% ID_move.R) %>%
-          bind_rows(R.hcwNC) -> R.hcwNC
-        
-        R.hcwC %>%
-          subset(!(ID %in% ID_move.R)) -> R.hcwC
+      R.hcwC %>%
+        subset(ID %in% ID_move.R$ID) %>%
+        bind_rows(R.hcwNC) -> R.hcwNC
+      
+      R.hcwC %>%
+        subset(!(ID %in% ID_move.R$ID)) -> R.hcwC
     }
     
-
+    
   } else if (prop.rNC < prop.hcwNC){ # need to move hcw from NC to C
     
     move <- round((prop.hcwNC-prop.rNC)*(length(SEAI.hcwC) + length(SEAI.hcwNC) + nrow(R.hcwNC) + nrow(R.hcwC)))
@@ -427,43 +452,43 @@ move_hcw <- function(S.hcwNC,
       sample_n(SEAI.move,replace=FALSE) -> ID_move
     
     S.hcwNC %>%
-      subset(ID %in% ID_move) %>%
+      subset(ID %in% ID_move$ID) %>%
       bind_rows(S.hcwC) -> S.hcwC
     
     S.hcwNC %>%
-      subset(!(ID %in% ID_move)) -> S.hcwNC
+      subset(!(ID %in% ID_move$ID)) -> S.hcwNC
     
     E.hcwNC %>%
-      subset(ID %in% ID_move) %>%
+      subset(ID %in% ID_move$ID) %>%
       bind_rows(E.hcwC) -> E.hcwC
     
     E.hcwNC %>%
-      subset(!(ID %in% ID_move)) -> E.hcwNC
+      subset(!(ID %in% ID_move$ID)) -> E.hcwNC
     
     A.hcwNC %>%
-      subset(ID %in% ID_move) %>%
+      subset(ID %in% ID_move$ID) %>%
       bind_rows(A.hcwC) -> A.hcwC
     
     A.hcwNC %>%
-      subset(!(ID %in% ID_move)) -> A.hcwNC
+      subset(!(ID %in% ID_move$ID)) -> A.hcwNC
     
     I.hcwNC %>%
-      subset(ID %in% ID_move) %>%
+      subset(ID %in% ID_move$ID) %>%
       bind_rows(I.hcwC) -> I.hcwC
     
     I.hcwNC %>%
-      subset(!(ID %in% ID_move)) -> I.hcwNC
+      subset(!(ID %in% ID_move$ID)) -> I.hcwNC
     
     if (R.move > 0){
       R.hcwNC %>%
         sample_n(R.move,replace=FALSE) -> ID_move.R
       
       R.hcwNC %>%
-        subset(ID %in% ID_move.R) %>%
+        subset(ID %in% ID_move.R$ID) %>%
         bind_rows(R.hcwC) -> R.hcwC
       
       R.hcwNC %>%
-        subset(!(ID %in% ID_move.R)) -> R.hcwNC
+        subset(!(ID %in% ID_move.R$ID)) -> R.hcwNC
     }
   }
   

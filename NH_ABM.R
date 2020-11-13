@@ -64,8 +64,11 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
   
   N.rNC <- nrow(S.rNC) + nrow(E.rNC) + nrow(A.rNC) + nrow(I.rNC) + nrow(R.rNC)
   N.rC <- ifelse(nrow(I.rC) + nrow(R.rC) > 0, nrow(I.rC) + nrow(R.rC), 1)  
+  N.rNC + N.rC
+  
   N.hcwNC <-  nrow(S.hcwNC) + nrow(E.hcwNC) + nrow(A.hcwNC) + nrow(I.hcwNC) + nrow(R.hcwNC)
   N.hcwC <- nrow(S.hcwC) + nrow(E.hcwC) + nrow(A.hcwC) + nrow(I.hcwC) + nrow(R.hcwC) 
+  N.hcwNC + N.hcwC
   
   
   # move residents from A/I to R and NC to C 
@@ -88,7 +91,7 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
     mutate(Res1 = case_when(Res1 %in% recover.I.rNC[[2]]$ID ~ NA_real_, TRUE~Res1),
            Res2 = case_when(Res2 %in% recover.I.rNC[[2]]$ID ~ NA_real_, TRUE~Res2)) -> rooms
   
-  recover.I.rC <- recover_or_test_r(I.rC, parms, "I")
+  recover.I.rC <- recover_I.rC(I.rC, parms)
   
   if (int.r==1 & t>int_time){
     R.rNC <- rbind(R.rNC,recover.I.rC[[1]]) # recover I.rC
@@ -97,7 +100,7 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
     R.rC <- rbind(R.rC,recover.I.rC[[1]])   # recover I.rC
     R.room <- NULL
   }
-  I.rC <- recover.I.rC[[3]] # keep rest in I.rC
+  I.rC <- recover.I.rC[[2]] # keep rest in I.rC
   
   #cat("recover",(nrow(S.rNC) + nrow(E.rNC) + nrow(A.rNC) + nrow(I.rNC) + nrow(R.rNC) + nrow(I.rC) + nrow(R.rC)),t,"\n")
   
@@ -156,7 +159,11 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
                        R.hcwNC %>% subset(ID>10000) %>% dplyr::select(ID),
                        R.hcwC %>% subset(ID>10000) %>% dplyr::select(ID)), use.names=FALSE)
       if (length(temp)>0){
-        temp_remove <- cbind("ID"=sample(temp,num_remove,replace=FALSE))
+        if (length(temp)>1){
+          temp_remove <- cbind("ID"=sample(temp,num_remove,replace=FALSE))
+        } else{
+          temp_remove <- temp
+        }        
         S.hcwNC %>% 
           subset(!(ID %in% temp_remove)) -> S.hcwNC
         S.hcwC %>% 
@@ -169,6 +176,10 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
           subset(!(ID %in% temp_remove)) -> A.hcwNC
         A.hcwC %>% 
           subset(!(ID %in% temp_remove)) -> A.hcwC
+        I.hcwNC %>% 
+          subset(!(ID %in% temp_remove)) -> I.hcwNC
+        I.hcwC %>% 
+          subset(!(ID %in% temp_remove)) -> I.hcwC
         R.hcwNC %>% 
           subset(!(ID %in% temp_remove)) -> R.hcwNC
         R.hcwC %>% 
@@ -179,7 +190,7 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
     R.hcwC <- rbind(R.hcwC,recover.home[[1]])
     # remove temporary hcw
     if (nrow(recover.home[[1]])>0){
-      num_remove <- nrow(recover.home[[1]])
+      num_remove <- nrow(recover.home[[1]]) 
       temp <- unlist(c(S.hcwNC %>% subset(ID>10000) %>% dplyr::select(ID),
                        S.hcwC %>% subset(ID>10000) %>% dplyr::select(ID),
                        E.hcwNC %>% subset(ID>10000) %>% dplyr::select(ID),
@@ -191,7 +202,11 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
                        R.hcwNC %>% subset(ID>10000) %>% dplyr::select(ID),
                        R.hcwC %>% subset(ID>10000) %>% dplyr::select(ID)), use.names=FALSE)
       if (length(temp)>0){
-        temp_remove <- cbind("ID"=sample(temp,num_remove,replace=FALSE))
+        if (length(temp)>1){
+          temp_remove <- cbind("ID"=sample(temp,num_remove,replace=FALSE))
+        } else{
+          temp_remove <- temp
+        }        
         S.hcwNC %>% 
           subset(!(ID %in% temp_remove)) -> S.hcwNC
         S.hcwC %>% 
@@ -204,6 +219,10 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
           subset(!(ID %in% temp_remove)) -> A.hcwNC
         A.hcwC %>% 
           subset(!(ID %in% temp_remove)) -> A.hcwC
+        I.hcwNC %>% 
+          subset(!(ID %in% temp_remove)) -> I.hcwNC
+        I.hcwC %>% 
+          subset(!(ID %in% temp_remove)) -> I.hcwC
         R.hcwNC %>% 
           subset(!(ID %in% temp_remove)) -> R.hcwNC
         R.hcwC %>% 
@@ -508,17 +527,23 @@ dt <- seq(0,200,t_step)
 
 ## loop over testing strategies
 
-testing_scenarios <- as.data.frame(cbind(c("PCR", "PCR", "Antigen","PCR","PCR","Antigen","Antigen","PCR","PCR","None"), 
-                                         c("PCR", "Antigen", "Antigen","PCR","PCR","Antigen","Antigen","PCR","PCR", "None")))
+testing_scenarios <- as.data.frame(cbind(c("PCR", "PCR", "Antigen","PCR","PCR","Antigen","Antigen","PCR","PCR","None",
+                                           "PCR","Antigen","Antigen","None","None","None","None"), 
+                                         c("PCR", "Antigen", "Antigen","PCR","PCR","Antigen","Antigen","PCR","PCR", "None",
+                                           "PCR","Antigen", "Antigen","Antigen", "Antigen","Antigen", "Antigen")))
 rownames(testing_scenarios) <- c("weekly_PCR", "daily_staff_antigen", "daily_antigen","weekly_PCR_slow","twice_weekly_PCR",
-                                 "weekly_antigen","antigen_highLOD","daily_PCR", "fast_PCR","none")
+                                 "weekly_antigen","antigen_highLOD","daily_PCR", "fast_PCR","none",
+                                 "2 day both PCR","2 day both","3 day both", 
+                                 "1 day staff", "2 day staff","3 day staff", "7 day staff")
 colnames(testing_scenarios) <- c("Res", "HCW")
-testing_scenarios$LOD.r <- c(3,3,5,3,3,5,7,3,3,1000)
-testing_scenarios$freq.r <- c(7,7,1,7,3,7,1,1,7,1000)
-testing_scenarios$delay.r <- c(2,2,0,7,2,0,0,2,1,1000)
-testing_scenarios$LOD.hcw <- c(3,5,5,3,3,5,7,3,3,1000)
-testing_scenarios$freq.hcw <- c(7,1,1,7,3,7,1,1,7,1000)
-testing_scenarios$delay.hcw <- c(2,0,0,7,2,0,0,2,1,1000)
+testing_scenarios$LOD.r <- c(3,3,5,3,3,5,7,3,3,1000,3,5,5,1000,1000,1000,1000)
+testing_scenarios$freq.r <- c(7,7,1,7,3,7,1,1,7,1000,2,2,3,1000,1000,1000,1000)
+testing_scenarios$delay.r <- c(2,2,0,7,2,0,0,2,1,1000,2,0,0,1000,1000,1000,1000)
+testing_scenarios$LOD.hcw <- c(3,5,5,3,3,5,7,3,3,1000,3,5,5,5,5,5,5)
+testing_scenarios$freq.hcw <- c(7,1,1,7,3,7,1,1,7,1000,2,2,3,1,2,3,7)
+testing_scenarios$delay.hcw <- c(2,0,0,7,2,0,0,2,1,1000,2,0,0,0,0,0,0)
+
+
 
 # PCR <- c(0, 7, 2)
 # PCR_slow <- c(0, 7, 7)
@@ -577,8 +602,13 @@ for(s in seq_along(1:nrow(testing_scenarios))){
     cat(sim,s,"\n")
     Ns <- initialize(inits,parms)
     res <- as.data.frame(matrix(nrow=length(dt),ncol=length(Ns)))
-    VLs <- NULL
+    VLs <- NULL    
+    bug_staff <- NULL
+    bug_resident <- NULL
+    bug_r <-0
+    bug_s <- 0
     for(i in 1:length(dt)){
+      debug <- Ns
       final <- stochastic_NH(parms,Ns,t_step,(i-1)*t_step)
       Ns <- final
       res[i,] <- c(i, nrow(Ns[["S.rNC"]]), nrow(Ns[["E.rNC"]]), nrow(Ns[["A.rNC"]]), nrow(Ns[["I.rNC"]]), nrow(Ns[["R.rNC"]]), 
@@ -587,6 +617,18 @@ for(s in seq_along(1:nrow(testing_scenarios))){
                    nrow(Ns[["S.hcwC"]]), nrow(Ns[["E.hcwC"]]), nrow(Ns[["A.hcwC"]]), nrow(Ns[["I.hcwC"]]), nrow(Ns[["R.hcwC"]]), 
                    nrow(Ns[["I.hcwH"]]), Ns[["inc_r"]],  Ns[["inc_hcw"]], Ns[["cum_inc_r"]], Ns[["cum_inc_hcw"]], Ns[["cum_inc_community"]],
                    Ns[["mortality"]],Ns[["total"]])
+      staff <- sum(res[i,c(9:18)])
+      residents <- sum(res[i,2:8])
+      if (staff!=100 & bug_s==0){
+        bug_staff <- debug
+        cat("staff",i,staff,"\n")
+        bug_s <- 1
+      }
+      if (residents!=100 & bug_r==0){
+        bug_resident <- debug
+        cat("residents",i,residents,"\n")
+        bug_r <- 1
+      }
       VLs <- rbind(VLs, get_VL(final, i))
     }
     
@@ -604,7 +646,6 @@ for(s in seq_along(1:nrow(testing_scenarios))){
     
     write.csv(res_master, paste0(Sys.Date(),j,"_",k.HH,"_",k.RH,"_",k.HR,"_",k.RR,"_",I.C,"_",ppe,"_res_master_simulations.csv"))
     #write.csv(VL_master, paste0(Sys.Date(),j,"_VL_master_simulations.csv"))
-    
     
   }
   
