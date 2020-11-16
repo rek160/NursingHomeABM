@@ -40,7 +40,7 @@ initialize <- function(inits,params){
                               "removal.pd"=rep(NA, A.rNC.init),
                               "VL"=abs(rnorm(A.rNC.init, 8, 1)*0.5), "VL_waning"=rep(8/runif(1, 15, 21),A.rNC.init),  
                               "Inf.pd"=rep(parms["gamma"],A.rNC.init),"Inf.days"=rep(0,A.rNC.init), # can change if we want to assume they are partway into inf period
-                              "ID.pd"=round(runif(A.rNC.init, 1, parms["test_freq_r"]))+parms["test_delay_r"],"ID.days"=rep(0,A.rNC.init),
+                              "ID.pd"=round(runif(A.rNC.init, 1, parms["test_freq_r"])),"ID.days"=rep(0,A.rNC.init),
                               "Infectiousness"=rep(1,A.rNC.init)))
     total <- total + A.rNC.init
   } else{
@@ -56,7 +56,7 @@ initialize <- function(inits,params){
                               "removal.pd"=rep(NA, I.rNC.init),
                               "VL"=abs(rnorm(I.rNC.init, 8, 1)*0.5), "VL_waning"=rep(8/runif(1, 15, 21),I.rNC.init),
                               "Inf.pd"=rep(parms["gamma"],I.rNC.init),"Inf.days"=rep(0,I.rNC.init), # can change if we want to assume they are partway into inf period
-                              "ID.pd"=min(round(runif(I.rNC.init, 1, parms["test_freq_r"]))+parms["test_delay_r"], parms["id.I"]),
+                              "ID.pd"=min(round(runif(I.rNC.init, 1, parms["test_freq_r"])), parms["id.I"]),
                               "ID.days"=rep(0,I.rNC.init),
                               "Infectiousness"=rep(1,I.rNC.init)))
     total <- total + I.rNC.init
@@ -122,7 +122,7 @@ initialize <- function(inits,params){
                                 "removal.pd"=rep(NA, A.hcwNC.init),
                                 "VL"=abs(rnorm(A.hcwNC.init, 8, 1)*0.5), "VL_waning"=rep(8/runif(1, 15, 21),A.hcwNC.init),
                               "Inf.pd"=rep(parms["gamma"],A.hcwNC.init),"Inf.days"=rep(0,A.hcwNC.init), # can change if we want to assume they are partway into inf period
-                              "ID.pd"=round(runif(A.hcwNC.init, 1, parms["test_freq_hcw"]))+parms["test_delay_hcw"],
+                              "ID.pd"=round(runif(A.hcwNC.init, 1, parms["test_freq_hcw"])),
                               "ID.days"=rep(0,A.hcwNC.init),
                               "Infectiousness"=rep(1,A.hcwNC.init)))
     total <- total + A.hcwNC.init
@@ -139,7 +139,7 @@ initialize <- function(inits,params){
     I.hcwNC=as.data.frame(cbind("ID"=(total+1):(total+ I.hcwNC.init),"VL_rise" = round(runif(I.hcwNC.init, 1, 4)),
                                 "removal.pd"=rep(NA, I.hcwNC.init),"VL"=abs(rnorm(I.hcwNC.init, 8, 1)*0.5), "VL_waning"=rep(8/runif(1, 15, 21),I.hcwNC.init),
                               "Inf.pd"=rep(parms["gamma"],I.hcwNC.init),"Inf.days"=rep(0,I.hcwNC.init), # can change if we want to assume they are partway into inf period
-                              "ID.pd"= min(round(runif(I.hcwNC.init, 1, parms["test_freq_hcw"]))+parms["test_delay_hcw"], parms["id.I"]),
+                              "ID.pd"= min(round(runif(I.hcwNC.init, 1, parms["test_freq_hcw"])), parms["id.I"]),
                               "ID.days"=rep(0,I.hcwNC.init),
                               "Infectiousness"=rep(1,I.hcwNC.init)))
                           
@@ -180,7 +180,7 @@ initialize <- function(inits,params){
     A.hcwC=as.data.frame(cbind("ID"=(total+1):(total+ A.hcwC.init), "VL_rise" = round(runif(A.hcwC.init, 1, 4)),
                                "removal.pd"=rep(NA, A.hcwC.init),"VL"=abs(rnorm(A.hcwC.init, 8, 1)*0.5), "VL_waning"=rep(8/runif(1, 15, 21),A.hcwC.init),
                                 "Inf.pd"=rep(parms["gamma"],A.hcwC.init),"Inf.days"=rep(0,A.hcwC.init), # can change if we want to assume they are partway into inf period
-                                "ID.pd"=round(runif(A.hcwC.init, 1, parms["test_freq_hcw"]))+parms["test_delay_hcw"],
+                                "ID.pd"=round(runif(A.hcwC.init, 1, parms["test_freq_hcw"])),
                                "ID.days"=rep(0,A.hcwC.init),
                                 "Infectiousness"=rep(1,A.hcwC.init)))
                          
@@ -198,7 +198,7 @@ initialize <- function(inits,params){
     I.hcwC=as.data.frame(cbind("ID"=(total+1):(total+ I.hcwC.init), "VL_rise" = round(runif(I.hcwC.init, 1, 4)),
                                "removal.pd"=rep(NA, I.hcwC.init),"VL"=abs(rnorm(I.hcwC.init, 8, 1)*0.5), "VL_waning"=rep(8/runif(1, 15, 21),I.hcwC.init),
                                 "Inf.pd"=rep(parms["gamma"],I.hcwC.init),"Inf.days"=rep(0,I.hcwC.init), # can change if we want to assume they are partway into inf period
-                                "ID.pd"=min(round(runif(I.hcwC.init, 1, parms["test_freq_hcw"]))+parms["test_delay_hcw"], parms["id.I"]),
+                                "ID.pd"=min(round(runif(I.hcwC.init, 1, parms["test_freq_hcw"])), parms["id.I"]),
                                 "ID.days"=rep(0,I.hcwC.init),
                                 "Infectiousness"=rep(1,I.hcwC.init)))
                          

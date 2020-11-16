@@ -292,7 +292,7 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
     for (i in 1:nrow(S.rNC)){
       roommate.exp <- expose_roommate(rooms,S.rNC$ID[i],A.rNC,I.rNC)
       exp.prob <- beta.rm*roommate.exp +  
-        beta*(ifelse(N.rNC>0,k.RR*(sum(I.rNC$Infectiousness)+sum(A.rNC$IInfectiousness))/N.rNC,0)) +
+        beta*(ifelse(N.rNC>0,k.RR*(sum(I.rNC$Infectiousness)+sum(A.rNC$Infectiousness))/N.rNC,0)) +
         beta.s*(ifelse(N.hcwNC>0,k.RH*(sum(I.hcwNC$Infectiousness)+sum(A.hcwNC$Infectiousness))/N.hcwNC,0))
       if (exp.prob >= 1){
         exp.prob <- 1
