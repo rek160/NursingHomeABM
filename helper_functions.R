@@ -68,7 +68,9 @@ recover_or_test_r <- function(df,parms,symptoms){
   df1 %>%
     subset(ID.days != removal.pd) %>%
     mutate(ID.days = ID.days + 1,
-           Inf.days = Inf.days + 1) %>%
+           Inf.days = Inf.days + 1,
+           VL = case_when(Inf.days <=VL_rise ~ VL * (Inf.days+1)/(Inf.days),
+                          Inf.days > VL_rise  ~ VL - VL_waning)) %>%
     bind_rows(df2) %>%
     bind_rows(df3) -> df
   
@@ -88,7 +90,10 @@ recover_I.rC <- function(df,parms){
   
   df %>%
     subset(!(ID %in% recovered$ID)) %>%
-    mutate(Inf.days = Inf.days + 1) -> df    
+    mutate(Inf.days = Inf.days + 1,
+           VL = case_when(Inf.days <=VL_rise ~ VL * (Inf.days+1)/(Inf.days),
+                          Inf.days > VL_rise ~ VL - VL_waning),
+           VL = case_when(VL < 0 ~ 0, TRUE ~ VL)) -> df    
   
   list("recovered"=recovered,
        "df"=df)
@@ -169,7 +174,9 @@ recover_or_test_hcw <- function(df,parms, total, symptoms){
   df1 %>%
     subset(ID.days != removal.pd) %>%
     mutate(ID.days = ID.days + 1,
-           Inf.days = Inf.days + 1) %>% 
+           Inf.days = Inf.days + 1,
+           VL = case_when(Inf.days <=VL_rise ~ VL * (Inf.days+1)/(Inf.days),
+                          Inf.days > VL_rise  ~ VL - VL_waning)) %>% 
     bind_rows(df2) %>%
     bind_rows(df3) -> df
   

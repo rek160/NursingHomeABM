@@ -341,7 +341,7 @@ stochastic_NH <- function(parms, Ns, delta_t, t){
   S.hcwNC <- expose.S.hcwNC[[2]]
   
   exp.prob <- beta*ppe*(ifelse(N.hcwC>0,k.HH*(sum(I.hcwC$Infectiousness)+sum(A.hcwC$Infectiousness))/N.hcwC,0)) + 
-    beta.s*ppe*(ifelse(N.rC>0,k.HR*sum(I.rC$Infectiousness)/N.rC,0)) + I.C
+    beta.s*ppe*(ifelse(N.rC>0,k.HR*sum(I.rC$Infectiousness)/N.rC,0))
   if (exp.prob > 1){
     exp.prob <- 1
   }
