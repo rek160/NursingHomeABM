@@ -3,8 +3,8 @@ recover_or_test_r <- function(df,parms,symptoms){
   df %>%
     subset(Inf.days==Inf.pd) %>%
     mutate(Rec.days = 0) %>%
-    dplyr::select(ID,VL,VL_waning,Rec.days) -> recovered
-  
+    dplyr::select(ID,VL,arrival,departure,VL_waning,Rec.days,
+                  V_doses,V_refused,V1_t,V2_t,VE_i,VE_s,VE_p) -> recovered
   
   df %>%
     subset(!(ID %in% recovered$ID)) -> df
@@ -17,26 +17,26 @@ recover_or_test_r <- function(df,parms,symptoms){
   
   if(symptoms=="A"){    ## asymptomatics who are identified through testing
     df %>%
-      subset(ID.pd==ID.days & VL>=parms["VL.threshold.r"] & is.na(removal.pd)) %>%
-      mutate(removal.pd = ID.pd + parms["test_delay_r"]
+      subset(ID.pd==ID.days & VL>=parms[["VL.threshold.r"]] & is.na(removal.pd)) %>%
+      mutate(removal.pd = ID.pd + parms[["test_delay_r"]]
              #,ID.days = ID.days + 1
              ) -> df1
     
   }else{
     
     df %>%
-      subset(ID.days == parms["id.I"] | (ID.days == ID.pd & VL>=parms["VL.threshold.r"] & is.na(removal.pd))) %>%
-      mutate(removal.pd = case_when(ID.days == parms["id.I"] ~ ID.days, 
-                                   (ID.days == ID.pd & VL>=parms["VL.threshold.r"]) ~ ID.pd + parms["test_delay_r"]) #ID.days != parms["id.I"] &
+      subset(ID.days == parms[["id.I"]] | (ID.days == ID.pd & VL>=parms[["VL.threshold.r"]] & is.na(removal.pd))) %>%
+      mutate(removal.pd = case_when(ID.days == parms[["id.I"]] ~ ID.days, 
+                                   (ID.days == ID.pd & VL>=parms[["VL.threshold.r"]]) ~ ID.pd + parms[["test_delay_r"]]) #ID.days != parms[["id.I"]] &
              # ,ID.days = ID.days + 1
              ) -> df1   ##  ## symptomatics who are identified through testing OR symptoms
   }
   
   
   df %>%
-    subset(ID.pd==ID.days & VL<parms["VL.threshold.r"] & is.na(removal.pd)  & !(ID %in% df1$ID)) %>%  # !(ID %in% df1$ID) excludes people identified through symptoms
+    subset(ID.pd==ID.days & VL<parms[["VL.threshold.r"]] & is.na(removal.pd)  & !(ID %in% df1$ID)) %>%  # !(ID %in% df1$ID) excludes people identified through symptoms
     mutate(Inf.days=Inf.days + 1,
-           ID.pd = ID.pd + parms["test_freq_r"],
+           ID.pd = ID.pd + parms[["test_freq_r"]],
            ID.days = ID.days + 1,
            VL = case_when(Inf.days <=VL_rise ~ VL * (Inf.days+1)/(Inf.days),
                           Inf.days > VL_rise  ~ VL - VL_waning),
@@ -85,27 +85,28 @@ recover_I.rC <- function(df,parms){
   df %>%
     subset(Inf.days==Inf.pd) %>%
     mutate(Rec.days = 0) %>%
-    dplyr::select(ID,VL,VL_waning,Rec.days) -> recovered
-  
+    dplyr::select(ID,VL,arrival,departure,VL_waning,Rec.days,
+                  V_doses,V_refused,V1_t,V2_t,VE_i,VE_s,VE_p) -> recovered
   
   df %>%
     subset(!(ID %in% recovered$ID)) %>%
     mutate(Inf.days = Inf.days + 1,
            VL = case_when(Inf.days <=VL_rise ~ VL * (Inf.days+1)/(Inf.days),
                           Inf.days > VL_rise ~ VL - VL_waning),
-           VL = case_when(VL < 0 ~ 0, TRUE ~ VL)) -> df    
+           VL = case_when(VL < 0 ~ 0, TRUE ~ VL)) -> df  
   
   list("recovered"=recovered,
        "df"=df)
 }
   
 
-recover_or_test_hcw <- function(df,parms, total, symptoms){
+recover_or_test_hcw <- function(df,parms, total, symptoms, ratio){
   
   df %>%
     subset(Inf.days==Inf.pd) %>%
     mutate(Rec.days = 0) %>%
-    dplyr::select(ID,VL,VL_waning,Rec.days) -> recovered
+    dplyr::select(ID,VL,VL_waning,Rec.days,
+                  V_doses,V_refused,V1_t,V2_t,VE_i,VE_s,VE_p) -> recovered
   
   df %>%
     subset(!(ID %in% recovered$ID)) -> df
@@ -119,28 +120,28 @@ recover_or_test_hcw <- function(df,parms, total, symptoms){
   
   if(symptoms=="A"){    ## asymptomatics who are identified through testing
     df %>%
-      subset(ID.pd==ID.days & VL>=parms["VL.threshold.hcw"] & is.na(removal.pd)) %>%
-      mutate(removal.pd = ID.pd + parms["test_delay_hcw"])  -> df1
+      subset(ID.pd==ID.days & VL>=parms[["VL.threshold.hcw"]] & is.na(removal.pd)) %>%
+      mutate(removal.pd = ID.pd + parms[["test_delay_hcw"]])  -> df1
         
-             #Home.pd=parms["gamma"],
+             #Home.pd=parms[["gamma"]],
              #Home.days=0
               #%>% dplyr::select(-ID.pd,-ID.days)
     
   }else{
     
     df %>%
-      subset(ID.days == parms["id.I"] | (ID.days == ID.pd & VL>=parms["VL.threshold.hcw"] & is.na(removal.pd))) %>%
-      mutate(removal.pd = case_when(ID.days == parms["id.I"] ~ ID.days, 
-                                    (ID.days == ID.pd & VL>=parms["VL.threshold.hcw"]) ~ ID.pd + parms["test_delay_hcw"])
+      subset(ID.days == parms[["id.I"]] | (ID.days == ID.pd & VL>=parms[["VL.threshold.hcw"]] & is.na(removal.pd))) %>%
+      mutate(removal.pd = case_when(ID.days == parms[["id.I"]] ~ ID.days, 
+                                    (ID.days == ID.pd & VL>=parms[["VL.threshold.hcw"]]) ~ ID.pd + parms[["test_delay_hcw"]])
              ) -> df1  ##  ## symptomatics who are identified through testing OR symptoms
   }
   
   
   df %>%
-    subset(ID.pd==ID.days & VL<parms["VL.threshold.hcw"] & is.na(removal.pd) & !(ID %in% df1$ID)) %>%
+    subset(ID.pd==ID.days & VL<parms[["VL.threshold.hcw"]] & is.na(removal.pd) & !(ID %in% df1$ID)) %>%
     mutate(Inf.days=Inf.days + 1,
            ID.days=ID.days + 1,
-           ID.pd = ID.pd +  parms["test_freq_hcw"],
+           ID.pd = ID.pd +  parms[["test_freq_hcw"]],
            VL = case_when(Inf.days <=VL_rise ~ VL * (Inf.days+1)/(Inf.days),
                           Inf.days > VL_rise  ~ VL - VL_waning),
            VL = case_when(VL < 0 ~ 0, TRUE ~ VL),
@@ -166,7 +167,7 @@ recover_or_test_hcw <- function(df,parms, total, symptoms){
   
   tested1 %>%
     bind_rows(tested2) %>%
-    mutate(Home.pd=parms["gamma"],
+    mutate(Home.pd=parms[["gamma"]],
            Home.days=0) %>% 
     dplyr::select(-ID.pd,-ID.days,-removal.pd) -> tested
   
@@ -182,29 +183,79 @@ recover_or_test_hcw <- function(df,parms, total, symptoms){
   
   
   if (nrow(tested)>0){
-    new_E <- rbinom(1,nrow(tested),parms["I.C"])
-    new_R <- rbinom(1,(nrow(tested)-new_E),parms["prop_rhcwR"])
-    new_S <- nrow(tested) - new_E - new_R
-    if (new_S >0){
-      new.hcwS <- as.data.frame(cbind("ID"=10000+c((total + 1):(total + new_S)),"VL"=NA))
+    
+    if (isFALSE(parms[["shortage"]]) | ratio < parms[["shortage_threshold"]]){
+      new_E <- rbinom(1,nrow(tested),parms[["I.C"]])
+      new_R <- rbinom(1,(nrow(tested)-new_E),parms[["prop_rhcwR"]])
+      new_S <- nrow(tested) - new_E - new_R
+      if (new_S >0){
+        new.hcwS <- as.data.frame(cbind("ID"=10000+c((total + 1):(total + new_S)),"VL"=NA,
+                                        "V_doses" = 0, "V_refused" = NA,  
+                                        "V1_t"=NA, "V2_t"=NA,                          
+                                        "VE_i"=0, "VE_s"=0, "VE_p"=0))
+      } else{
+        new.hcwS <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),
+                                         "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                         "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                         "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric()))
+      }
+      if (new_E >0){
+        new.hcwE <- as.data.frame(cbind("ID"=10000+c((total + new_S + 1):(total+new_S + new_E)),"VL"=0,
+                                        "V_doses" = 0, "V_refused" = NA,  
+                                        "V1_t"=NA, "V2_t"=NA,                          
+                                        "VE_i"=0, "VE_s"=0, "VE_p"=0,
+                                      Inc.pd=round(runif(length(new_E), parms[["sigma1"]], parms[["sigma2"]])),Days=0))
+      } else{
+        new.hcwE <- as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric()),
+                                  "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                  "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                  "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric(),
+                                  "Inc"=as.numeric(),"Days"=as.numeric())
+      }
+      if (new_R >0){
+        new.hcwR <- as.data.frame(cbind("ID"=10000+c((total + new_S + new_E + 1):(total+new_S + new_E + new_R)),"VL"=0, 
+                                        "V_doses" = 0, "V_refused" = NA,  
+                                        "V1_t"=NA, "V2_t"=NA,                          
+                                        "VE_i"=0, "VE_s"=0, "VE_p"=0,
+                                        "VL_waning"=0, "Rec.days"=0)) # assume 0 VL
+      } else{
+        new.hcwR <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),
+                                         "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                         "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                         "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric(),
+                                         "VL_waning"=as.numeric(),"Rec.days"=as.numeric()))
+      }
     } else{
-      new.hcwS <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric()))
-    }
-    if (new_E >0){
-      new.hcwE <- as.data.frame(cbind("ID"=10000+c((total + new_S + 1):(total+new_S + new_E)),"VL"=0,
-                                    Inc.pd=round(runif(length(new_E), parms["sigma1"], parms["sigma2"])),Days=0))
-    } else{
-      new.hcwE <- as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric()),"Inc"=as.numeric(),"Days"=as.numeric())
-    }
-    if (new_R >0){
-      new.hcwR <- as.data.frame(cbind("ID"=10000+c((total + new_S + new_E + 1):(total+new_S + new_E + new_R)),"VL"=0, "VL_waning"=0, "Rec.days"=0)) # assume 0 VL
-    } else{
-      new.hcwR <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(), "VL_waning"=as.numeric(),"Rec.days"=as.numeric()))
+      new.hcwS <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),
+                                       "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                       "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                       "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric()))
+      new.hcwE <- as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),
+                                      "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                      "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                      "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric(),
+                                      "Inc"=as.numeric(),"Days"=as.numeric()))
+      new.hcwR <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),
+                                       "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                       "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                       "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric(),
+                                       "VL_waning"=as.numeric(),"Rec.days"=as.numeric()))
     }
   } else{
-    new.hcwS <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric()))
-    new.hcwE <- as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),"Inc"=as.numeric(),"Days"=as.numeric()))
-    new.hcwR <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),"VL_waning"=as.numeric(),"Rec.days"=as.numeric()))
+    new.hcwS <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),
+                                     "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                     "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                     "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric()))
+    new.hcwE <- as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),
+                                    "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                    "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                    "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric(),
+                                    "Inc"=as.numeric(),"Days"=as.numeric()))
+    new.hcwR <-  as.data.frame(cbind("ID"=as.character(),"VL"=as.numeric(),
+                                     "V_doses" = as.numeric(), "V_refused" = as.numeric(),  
+                                     "V1_t"=as.numeric(), "V2_t"=as.numeric(),                        
+                                     "VE_i"=as.numeric(), "VE_s"=as.numeric(), "VE_p"=as.numeric(),
+                                     "VL_waning"=as.numeric(),"Rec.days"=as.numeric()))
   }
   
   tested %>%
@@ -224,7 +275,8 @@ recover_home_hcw <- function(I.hcwH){
   I.hcwH %>%
     subset(Home.pd==Home.days) %>%
     mutate(Rec.days = 0) %>%
-    dplyr::select(ID,VL,VL_waning,Rec.days) -> recovered
+    dplyr::select(ID,VL,VL_waning,Rec.days,
+                  V_doses,V_refused,V1_t,V2_t,VE_i,VE_s,VE_p) -> recovered
   
   I.hcwH %>%
     subset(!(ID %in% recovered$ID)) %>%
@@ -241,17 +293,18 @@ recover_home_hcw <- function(I.hcwH){
   
 }
 
+
 E_to_I_r <- function(df,parms){
   
   df %>%
     subset(Days==Inc.pd) %>%
-    dplyr::select(ID,VL) %>%
-    mutate(asympt = rbinom(length(ID),1,parms["alpha.r"]),
-           Inf.pd=parms["gamma"],
+    dplyr::select(ID,VL,arrival,departure,V_doses,V_refused,V1_t,V2_t,VE_i,VE_s,VE_p) %>%
+    mutate(asympt = rbinom(length(ID),1,(1-(1-parms[["alpha.r"]])*(1-VE_p))),
+           Inf.pd=parms[["gamma"]],
            Inf.days=0,
            ID.pd=case_when(
-             asympt==1 ~ round(runif(length(ID), 1, parms["test_freq_r"])),
-             asympt==0 ~ pmin(round(runif(length(ID), 1, parms["test_freq_r"])), parms["id.I"])),
+             asympt==1 ~ ifelse(parms[["test_freq_r"]]==1000, 1000, round(runif(length(ID), 1, parms[["test_freq_r"]]))),
+             asympt==0 ~ pmin(ifelse(parms[["test_freq_r"]]==1000, 1000,round(runif(length(ID), 1, parms[["test_freq_r"]]))), parms[["id.I"]])),
            ID.days = 0, 
            removal.pd = NA) -> infected
   
@@ -262,8 +315,7 @@ E_to_I_r <- function(df,parms){
            VL_waning = VL*(VL_rise+1)/runif(sum(asympt==1), 15, 21), 
            Infectiousness = case_when(VL<4 ~ 0, 
                                       VL>=4 & VL<7 ~ 0.5, 
-                                      VL>=7 ~ 1)) %>%
-    dplyr::select(-asympt) -> infected_asympt
+                                      VL>=7 ~ 1))-> infected_asympt
   
   infected %>%
     subset(asympt==0) %>%
@@ -272,8 +324,7 @@ E_to_I_r <- function(df,parms){
            VL_waning = VL*(VL_rise+1)/runif(sum(asympt==0), 15, 21),
            Infectiousness = case_when(VL<4 ~ 0, 
                                       VL>=4 & VL<7 ~ 0.5, 
-                                      VL>=7 ~ 1)) %>%
-    dplyr::select(-asympt) -> infected_sympt
+                                      VL>=7 ~ 1)) -> infected_sympt
   
   df %>%
     subset(Days<Inc.pd) %>%
@@ -288,15 +339,15 @@ E_to_I_hcw <- function(df,parms){
   
   df %>%
     subset(Days==Inc.pd) %>%
-    dplyr::select(ID,VL) %>%
-    mutate(asympt = rbinom(length(ID),1,parms["alpha.hcw"]),
-           Inf.pd=parms["gamma"],
+    dplyr::select(ID,VL,V_doses,V_refused,V1_t,V2_t,VE_i,VE_s,VE_p) %>%
+    mutate(asympt = rbinom(length(ID),1,(1-(1-parms[["alpha.hcw"]])*(1-VE_p))),
+           Inf.pd=parms[["gamma"]],
            Inf.days=0,
            ID.pd=case_when(
-             asympt==1 ~ round(runif(length(ID), 1, parms["test_freq_hcw"])) # + parms["test_delay_hcw"]
+             asympt==1 ~ ifelse(parms[["test_freq_hcw"]]==1000, 1000, round(runif(length(ID), 1, parms[["test_freq_hcw"]]))) # + parms[["test_delay_hcw"]]
              ,
-             asympt==0 ~ pmin(round(runif(length(ID), 1, parms["test_freq_hcw"])) # + parms["test_delay_hcw"]
-                              , parms["id.I"])
+             asympt==0 ~ pmin(ifelse(parms[["test_freq_hcw"]]==1000, 1000, round(runif(length(ID), 1, parms[["test_freq_hcw"]]))) # + parms[["test_delay_hcw"]]
+                              , parms[["id.I"]])
            ),
            ID.days = 0, 
            removal.pd = NA) -> infected
@@ -335,7 +386,7 @@ infect <- function(df,parms,num.exposed){
   
   df %>%
     sample_n(num.exposed,replace=FALSE) %>%
-    mutate(Inc.pd= round(runif(num.exposed, parms["sigma1"], parms["sigma2"])),
+    mutate(Inc.pd= round(runif(num.exposed, parms[["sigma1"]], parms[["sigma2"]])),
            VL= 0,
            Days=0)-> new_exposed
   
@@ -512,26 +563,114 @@ move_hcw <- function(S.hcwNC,
   
 }
 
-
-death <- function(df,mu,parms,total){
+death <- function(df,mu,parms,total,t,dt){ # departure and death function
   
-  num_die <- rbinom(1,nrow(df),mu)
+  #num_die <- rbinom(1,nrow(df),mu)
+  
+  VE_s2 = parms[["VE_s2_r"]]
+  VE_i2 = parms[["VE_i2_r"]]
+  VE_p2 = parms[["VE_p2_r"]]
+  
+  max_LOS <- max(dt) + 10
   
   df %>%
-    sample_n(num_die,replace=FALSE) -> new_dead
+    subset(t==departure) -> discharges
+  
+  df %>%
+    subset(!(ID %in% discharges$ID)) -> df
+  
+  new_dead <- data.frame()
+  if (nrow(df)>0){
+    for (i in 1:nrow(df)){ # loop through each person to see if they die
+      death_stat <- rbinom(1,1,mu) 
+      if (death_stat == 1){
+        new_dead <- bind_rows(new_dead,df %>% subset(ID==i))
+        
+      }
+    }
+  }
   
   df %>%
     subset(!(ID %in% new_dead$ID)) -> df
   
   new_dead %>%
-    mutate(VL = NA) %>%
-    dplyr::select(ID,VL) -> new_entry
+    bind_rows(discharges) -> leaving
+  
+  leaving %>%
+    mutate(VL = NA,arrival=t,departure= t + sample(x=LOS$LOS,size=nrow(discharges)+nrow(new_dead),prob=LOS$prob,replace=TRUE),  # alternate is + max_LOS
+           V_doses = sample(c(2,0),size=nrow(discharges)+nrow(new_dead),prob=c(parms[["comm.vax"]],1-parms[["comm.vax"]]),replace=TRUE),
+           V_refused = NA,
+           V1_t = NA,
+           V2_t = NA,   
+           VE_i = case_when(V_doses==2 ~ VE_i2, 
+                           TRUE ~ 0),
+           VE_s = case_when(V_doses==2 ~ VE_s2, 
+                           TRUE ~ 0),
+           VE_p = case_when(V_doses==2 ~ VE_p2, 
+                           TRUE ~ 0)) %>%
+    dplyr::select(ID,VL,arrival,departure,V_doses,V_refused,V1_t,V2_t,VE_i,VE_s,VE_p) -> new_entry
   
   if (nrow(new_entry)>0){
-    new_entry$ID = c((total + 1):(total+nrow(new_dead))) # had trouble doing this in the above line
+    new_entry$ID = c((total + 1):(total+nrow(new_dead) + nrow(discharges))) # had trouble doing this in the above line
   }
   
-  list(df,nrow(new_dead),new_entry,new_dead)
+  list(df,nrow(new_dead),new_entry,leaving,nrow(discharges))
+  
+}
+
+covid_death <- function(df,mu,parms,total,t,dt){ # departure and death function
+  
+  VE_s2 = parms[["VE_s2_r"]]
+  VE_i2 = parms[["VE_i2_r"]]
+  VE_p2 = parms[["VE_p2_r"]]
+  
+  max_LOS <- max(dt) + 10
+  
+  df %>%
+    subset(t==departure) -> discharges
+  
+  df %>%
+    subset(!(ID %in% discharges$ID)) -> df
+  
+  new_dead <- data.frame()
+  if (nrow(df)>0){
+    for (i in 1:nrow(df)){ # loop through each person to see if they die
+      if(df$asympt[i]==1){
+        mu = parms[["mu.NC"]]
+      }
+      death_stat <- rbinom(1,1,mu) 
+      if (death_stat == 1){
+        new_dead <- bind_rows(new_dead,df %>% subset(ID==i))
+      }
+      
+    }
+  }
+  
+  df %>%
+    subset(!(ID %in% new_dead$ID)) -> df
+  
+  new_dead %>%
+    bind_rows(discharges) -> leaving
+  
+  leaving %>%
+    mutate(VL = NA,arrival=t,departure= t + sample(x=LOS$LOS,size=nrow(discharges)+nrow(new_dead),prob=LOS$prob,replace=TRUE), # alternate is + max_LOS
+           V_doses = sample(c(2,0),size=nrow(discharges)+nrow(new_dead),prob=c(parms[["comm.vax"]],1-parms[["comm.vax"]]),replace=TRUE),
+           V_refused = NA,
+           V1_t = NA,
+           V2_t = NA,   
+           VE_i = case_when(V_doses==2 ~ VE_i2, 
+                            TRUE ~ 0),
+           VE_s = case_when(V_doses==2 ~ VE_s2, 
+                            TRUE ~ 0),
+           VE_p = case_when(V_doses==2 ~ VE_p2, 
+                            TRUE ~ 0)) %>%
+    dplyr::select(ID,VL,arrival,departure,V_doses,V_refused,V1_t,V2_t,VE_i,VE_s,VE_p) -> new_entry
+  
+  if (nrow(new_entry)>0){
+    new_entry$ID = c((total + 1):(total+nrow(new_dead) + nrow(discharges))) # had trouble doing this in the above line
+  }
+  
+  list(df,nrow(new_dead),new_entry,leaving,nrow(discharges))
   
 }
 
@@ -569,7 +708,7 @@ assign_rooms <- function(rooms,new_entry,R.room,int.room,t,parms){
   if (length(new_entry) + length(R.room)>0){
   
 
-    if (int.room == 1 & t> parms["int_time"]){ # put in empty rooms first, then single occupancy rooms
+    if (int.room == 1 & t> parms[["int_time"]]){ # put in empty rooms first, then single occupancy rooms
       
         x= 0
         y= 0
@@ -710,4 +849,68 @@ expose_roommate <- function(rooms,ID,A.rNC,I.rNC){
 }
 
 
+
+vaccinate <- function(df, parms, type, vax_count1, vax_count2, t){
+  
+  ## assign vaccination times 
+
+  coverage = if_else(type=="staff", parms[["vax_coverage_hcw"]], parms[["vax_coverage_r"]])
+  refusal = if_else(type=="staff", parms[["refusal_hcw"]], parms[["refusal_r"]])
+  VE_s1 = if_else(type=="staff", parms[["VE_s1_hcw"]], parms[["VE_s1_r"]])
+  VE_s2 = if_else(type=="staff", parms[["VE_s2_hcw"]], parms[["VE_s2_r"]])
+  VE_i1 = if_else(type=="staff", parms[["VE_i1_hcw"]], parms[["VE_i1_r"]])
+  VE_i2 = if_else(type=="staff", parms[["VE_i2_hcw"]], parms[["VE_i2_r"]])
+  VE_p1 = if_else(type=="staff", parms[["VE_p1_hcw"]], parms[["VE_p1_r"]])
+  VE_p2 = if_else(type=="staff", parms[["VE_p2_hcw"]], parms[["VE_p2_r"]])
+  
+  if (t %in% parms[["t_first_dose"]]){
+    # choose number to vax based on coverage and availabilty (only track supply of vax_count1 against vax_available)
+    n_new_vax <- floor(min(parms[["vax_available"]] - vax_count1, coverage/length(parms[["t_first_dose"]])*nrow(df %>% subset(V_doses==0))))
+    
+    # mark a certain percent as refusing vaccines (new entries start with NA for this)
+    df %>% 
+      mutate(V_refused = case_when(is.na(V_refused) ~ sample(c(1,0), nrow(df), replace=TRUE, 
+                                                             prob=c(refusal, 1-refusal)),
+                                   TRUE ~ V_refused)) -> df
+    
+    # choose which people to vaccinate
+    df %>% 
+      subset(V_doses==0 & V_refused==0 & is.na(V1_t)) %>% # prevent people from being assigned dates twice
+      slice_sample(n=n_new_vax) -> df_vax
+    
+    # set their vaccination times
+    df %>% 
+      mutate(V1_t = case_when(ID %in% df_vax$ID ~ t,  # & t>= parms[["t_first_dose"]] removed because only doing if t %in% t_first_dose
+                              TRUE ~ V1_t),
+             V2_t = case_when(ID %in% df_vax$ID ~  V1_t + parms[["second_dose_delay"]], 
+                              TRUE ~ V2_t)) -> df
+  } else{
+    df_vax <- data.frame()
+  }
+  
+  second_dose_1 <- nrow(df %>% subset(V_doses==2))
+  
+  ## vaccinate based on time t, update VE incorporating vaccination delay
+  df %>% 
+    mutate(V_doses = case_when(t >= V1_t & t<V2_t ~ 1, 
+                               t >= V2_t ~ 2, 
+                               TRUE ~ V_doses),
+           VE_i = case_when(V_doses==1 & t>= V1_t+parms[["immune_delay"]] ~ VE_i1,
+                            V_doses==2 & t>= V2_t+parms[["immune_delay"]] ~ VE_i2, 
+                            TRUE ~ VE_i),
+           VE_s = case_when(V_doses==1 & t>= V1_t+parms[["immune_delay"]] ~ VE_s1,
+                            V_doses==2 & t>= V2_t+parms[["immune_delay"]] ~ VE_s2, 
+                            TRUE ~ VE_s),
+           VE_p = case_when(V_doses==1 & t>= V1_t+parms[["immune_delay"]] ~ VE_p1,
+                            V_doses==2 & t>= V2_t+parms[["immune_delay"]] ~ VE_p2, 
+                            TRUE ~ VE_p)) -> df
+  
+  second_dose_2 <- nrow(df %>% subset(V_doses==2))
+  
+  ## Update vax_counts
+  vax_count1 <- vax_count1 + nrow(df_vax)
+  vax_count2 <- vax_count2 + (second_dose_2 - second_dose_1) # get number of new second doses
+  
+  list(df, vax_count1, vax_count2)
+}
 
